@@ -26,7 +26,13 @@ import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import uk.co.ribot.easyadapter.EasyAdapter;
 
 /**
  * A basic sample which shows how to use {@link com.example.android.common.view.SlidingTabLayout}
@@ -81,7 +87,7 @@ public class SlidingTabsBasicFragment extends Fragment {
         // Give the SlidingTabLayout the ViewPager, this must be done AFTER the ViewPager has had
         // it's PagerAdapter set.
         mSlidingTabLayout = (SlidingTabLayout) view.findViewById(R.id.sliding_tabs);
-        mSlidingTabLayout.setCustomTabView(R.layout.item, R.id.item);
+        mSlidingTabLayout.setCustomTabView(R.layout.horizontal_tap_item, R.id.item);
         mSlidingTabLayout.setViewPager(mViewPager);
         // END_INCLUDE (setup_slidingtablayout)
     }
@@ -120,42 +126,57 @@ public class SlidingTabsBasicFragment extends Fragment {
         // BEGIN_INCLUDE (pageradapter_getpagetitle)
 
         /**
-         * Return the title of the item at {@code position}. This is important as what this method
+         * Return the title of the horizontal_tap_item at {@code position}. This is important as what this method
          * returns is what is displayed in the {@link SlidingTabLayout}.
          * <p/>
          * Here we construct one using the position value, but for real application the title should
-         * refer to the item's contents.
+         * refer to the horizontal_tap_item's contents.
          */
         @Override
         public CharSequence getPageTitle(int position) {
             
             /*return "Item " + (position + 1);*/
-            if(position == 0) return "Задачи";
-            if(position == 1) return "Профиль";
-            if(position == 2) return "Покупки";
+            if (position == 0) return "Задачи";
+            if (position == 1) return "Профиль";
+            if (position == 2) return "Покупки";
             return "nill";
         }
         // END_INCLUDE (pageradapter_getpagetitle)
 
-        /**
-         * Instantiate the {@link View} which should be displayed at {@code position}. Here we
-         * inflate a layout from the apps resources and then change the text view to signify the position.
-         */
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
             // Inflate a new layout from our resources
-            View view = getActivity().getLayoutInflater().inflate(R.layout.pager_item,
-                    container, false);
+            View view;
+            if (position == 0) {//current page is tasks
+                view = getActivity().getLayoutInflater().inflate(R.layout.orders_pager_item,
+                        container, false);
+
+            } else if (position == 1) {//current page is profile
+                view = getActivity().getLayoutInflater().inflate(R.layout.profile_pager_item,
+                        container, false);
+
+            } else {//current page is goods
+                view = getActivity().getLayoutInflater().inflate(R.layout.goods_pager_item,
+                        container, false);
+            }
             // Add the newly created View to the ViewPager
             container.addView(view);
 
-            // Retrieve a TextView from the inflated View, and update it's text
-            TextView title = (TextView) view.findViewById(R.id.item_title);
-            title.setText(String.valueOf(position + 1));
+            ListView ordersLW = (ListView) view.findViewById(R.id.lw_orders);
+            List<Order> ordersList = new ArrayList<>();
+            ordersList.add(new Order("vine", "Moscow"));
+            ordersList.add(new Order("cheese", "Penza"));
+            if (position == 0)
+                ordersList.add(new Order("ZERO", "Penza"));
+            if (position == 1)
+                ordersList.add(new Order("ONE", "Penza"));
+            if (position == 2)
+                ordersList.add(new Order("TWO", "Penza"));
+            ordersLW.setAdapter(new EasyAdapter<Order>(view.getContext(),
+                    OrdersViewHolder.class, ordersList
+            ));
 
             Log.i(LOG_TAG, "instantiateItem() [position: " + position + "]");
-
-            // Return the View
             return view;
         }
 
@@ -168,4 +189,6 @@ public class SlidingTabsBasicFragment extends Fragment {
 
 
     }
+
+
 }
