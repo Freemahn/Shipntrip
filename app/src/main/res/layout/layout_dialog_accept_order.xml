@@ -14,21 +14,23 @@
         android:textAppearance="?android:attr/textAppearanceLarge"></TextView>
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content">
 
         <Button
             android:id="@+id/btnYes"
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:text="Принять"></Button>
+            android:text="Принять"
+            android:layout_weight="1"></Button>
 
         <Button
             android:id="@+id/btnNo"
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:text="Отклонить"></Button>
+            android:text="Отклонить"
+            android:layout_weight="1"></Button>
     </LinearLayout>
 </LinearLayout>

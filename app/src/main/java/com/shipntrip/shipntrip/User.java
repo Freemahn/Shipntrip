@@ -8,10 +8,14 @@ public class User {
     String login;
     String name;
     String currentLocation;
+    String nextLocation;
+    String date;
 
-    public User(String login, String name, String currentLocation) {
+    public User(String login, String name, String currentLocation, String nextLocation, String date) {
         this.login = login;
         this.name = name;
         this.currentLocation = currentLocation;
+        this.nextLocation = nextLocation;
+        this.date = date;
     }
 }

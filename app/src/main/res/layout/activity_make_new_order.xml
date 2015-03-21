@@ -5,28 +5,85 @@
     android:orientation="vertical"
     android:padding="20dp">
 
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/et_title"
+        android:hint="Название товара" />
+
     <AutoCompleteTextView
         android:id="@+id/text_city_autocomplete"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Введите город расположения товара"
-        android:layout_weight="1">
+        android:hint="Город расположения товара"
+        android:singleLine="true">
 
         <requestFocus />
     </AutoCompleteTextView>
 
     <EditText
-        android:id="@+id/text_link"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:hint="Введите ссылку" />
+        android:id="@+id/et_address"
+        android:hint="Адрес" />
+
+
+    <EditText
+        android:id="@+id/et_link"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ссылка на товар"
+        android:singleLine="true" />
+
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/et_cost"
+        android:hint="Цена" />
+
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/et_comment"
+        android:hint="Примечания" />
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView3"
+        android:textSize="18sp"
+        android:hint="Максимальный срок доставки" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center">
+
+        <SeekBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekBar"
+            android:max="50"
+            android:progress="25"
+            android:indeterminate="false"
+            android:layout_weight="8" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="25 дней"
+            android:id="@+id/tw_days"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:textSize="18sp" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/btn_ok"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:text="Сделать заказ" />
 
 </LinearLayout>

@@ -2,14 +2,19 @@ package com.shipntrip.shipntrip;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -23,20 +28,33 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
 
 /**
  * Created by Freemahn on 21.03.2015.
  */
 public class MakeNewOrderActivity extends Activity implements AdapterView.OnItemClickListener {
-    AutoCompleteTextView et;
+
 
     private static final String LOG_TAG = "Autocomplete";
     private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
     private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
     private static final String OUT_JSON = "/json";
 
+    AutoCompleteTextView etAutocomplete;
+    SeekBar seekBar;
+    TextView twDays;
+    EditText etAddress;
+    EditText etLink;
+    EditText etCost;
+    EditText etComment;
+    EditText etTitle;
+    String loginUser;
 
     private static final String API_KEY = "AIzaSyC54rmw_TZ3p90kAcqXKh3ilgmL3e8P-7c";
 
@@ -44,21 +62,67 @@ public class MakeNewOrderActivity extends Activity implements AdapterView.OnItem
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        loginUser = getIntent().getStringExtra("loginUser");
         setContentView(R.layout.activity_make_new_order);
-       /* Button b = (Button) findViewById(R.id.btn_return);*/
-
-        et = (AutoCompleteTextView) findViewById(R.id.text_city_autocomplete);
-        et.setAdapter(new GooglePlacesAutocompleteAdapter(this, R.layout.list_item_autocomplete));
-        et.setOnItemClickListener(this);
-      /*  b.setOnClickListener(new View.OnClickListener() {
+        seekBar = (SeekBar) findViewById(R.id.seekBar);
+        twDays = (TextView) findViewById(R.id.tw_days);
+        etAddress = (EditText) findViewById(R.id.et_address);
+        etLink = (EditText) findViewById(R.id.et_link);
+        etCost = (EditText) findViewById(R.id.et_cost);
+        etComment = (EditText) findViewById(R.id.et_comment);
+        etTitle = (EditText) findViewById(R.id.et_title);
+        etAutocomplete = (AutoCompleteTextView) findViewById(R.id.text_city_autocomplete);
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public void onClick(View v) {
-                setResult(RESULT_OK);
-                finish();
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                twDays.setText(progress + " дн");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
 
             }
-        });*/
-        // et.setOn
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+       /* Button b = (Button) findViewById(R.id.btn_return);*/
+
+
+        etAutocomplete.setAdapter(new GooglePlacesAutocompleteAdapter(this, R.layout.list_item_autocomplete));
+        etAutocomplete.setOnItemClickListener(this);
+        Button b = (Button) findViewById(R.id.btn_ok);
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new MakeOrderTask(getOrder()).execute();
+                Intent intent = new Intent();
+                setResult(RESULT_OK, intent);
+                finish();
+            }
+        });
+    }
+
+    Order getOrder() {
+        Order order = new Order();
+        Calendar c = GregorianCalendar.getInstance();
+        c.add(Calendar.DAY_OF_MONTH, seekBar.getProgress());
+        Date d = c.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd");
+        String date = sdf.format(d);
+        Log.e("DATE", date);
+        order.date = date;
+        order.address = etAddress.getText().toString();
+        order.link = etLink.getText().toString();
+        order.city = etAutocomplete.getText().toString();
+        order.comment = etComment.getText().toString();
+        order.cost = etCost.getText().toString();
+        order.title = etTitle.getText().toString();
+        order.owner = loginUser;
+
+        return order;
     }
 
     @Override
@@ -76,7 +140,6 @@ public class MakeNewOrderActivity extends Activity implements AdapterView.OnItem
         try {
             StringBuilder sb = new StringBuilder(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON);
             sb.append("?key=" + API_KEY);
-            // sb.append("&components=country:gr");
             sb.append("&types=(cities)");
             sb.append("&language=(ru)");
             sb.append("&input=" + URLEncoder.encode(input, "utf8"));

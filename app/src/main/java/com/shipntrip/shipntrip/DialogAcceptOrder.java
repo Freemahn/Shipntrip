@@ -3,6 +3,8 @@ package com.shipntrip.shipntrip;
 /**
  * Created by Freemahn on 21.03.2015.
  */
+
+import android.content.Intent;
 import android.support.v4.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -12,24 +14,52 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 
-public class DialogAcceptOrder extends DialogFragment implements OnClickListener {
+import com.google.gson.Gson;
 
+public class DialogAcceptOrder extends DialogFragment {
+    public Order order;
     final String LOG_TAG = "myLogs";
+    int position;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Log.e("BUNDLE", getArguments().getString("order"));
+        order = new Gson().fromJson(getArguments().getString("order"), Order.class);
+        position = getArguments().getInt("position");
+    }
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        getDialog().setTitle("Title!");
+
+        getDialog().setTitle("Информация о заказе");
         View v = inflater.inflate(R.layout.layout_dialog_accept_order, null);
-        v.findViewById(R.id.btnYes).setOnClickListener(this);
-        v.findViewById(R.id.btnNo).setOnClickListener(this);
+        String info = "Товар: " + order.title + "\n";
+        info += "Город: " + order.city + "\n";
+        info += "Цена: " + order.cost + "\n";
+        info += "Дата: " + order.date;
+        ((TextView) v.findViewById(R.id.textView1)).setText(info);
+        v.findViewById(R.id.btnYes).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.putExtra("position", position);
+                getTargetFragment().onActivityResult(1, 1, intent);
+            }
+        });
+        v.findViewById(R.id.btnNo).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.putExtra("position", position);
+                getTargetFragment().onActivityResult(1, -1, intent);
+            }
+        });
         return v;
     }
 
-    public void onClick(View v) {
-        Log.d(LOG_TAG, "Dialog 1: " + ((Button) v).getText());
-        dismiss();
-    }
 
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);

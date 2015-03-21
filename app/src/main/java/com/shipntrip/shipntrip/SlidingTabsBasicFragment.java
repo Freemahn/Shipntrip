@@ -20,8 +20,8 @@ import com.example.android.common.logger.Log;
 import com.example.android.common.view.SlidingTabLayout;
 import com.google.gson.Gson;
 
+import android.content.Context;
 import android.os.AsyncTask;
-import android.support.v4.app.DialogFragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -31,16 +31,29 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
 import org.jsoup.Jsoup;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-
-import uk.co.ribot.easyadapter.EasyAdapter;
 
 /**
  * A basic sample which shows how to use {@link com.example.android.common.view.SlidingTabLayout}
@@ -50,6 +63,20 @@ import uk.co.ribot.easyadapter.EasyAdapter;
 public class SlidingTabsBasicFragment extends Fragment {
 
     static final String LOG_TAG = "SlidingTabsBasicFragment";
+    public static final int REQUEST_CODE_MAKE_ORDER = 0;
+    public static final int REQUEST_CODE_ACCEPT_DIALOG = 1;
+    List<Order> pendingList;
+    List<Order> taskList;
+    List<Order> orderList;
+    ServerAnswer user;
+    ListView pendingLW;
+    ListView orderLW;
+    ListView taskLW;
+    MyCustomAdapter myPendingAdapter;
+    MyCustomAdapter myOrderAdapter;
+    MyCustomAdapter myTaskAdapter;
+    String loginUser = "xaker";
+    Fragment t;
 
     /**
      * A custom {@link ViewPager} title strip which looks much like Tabs present in Android v4.0 and
@@ -57,9 +84,21 @@ public class SlidingTabsBasicFragment extends Fragment {
      */
     private SlidingTabLayout mSlidingTabLayout;
 
-    /**
-     * A {@link ViewPager} which will be used in conjunction with the {@link SlidingTabLayout} above.
-     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        t = this;
+        taskList = new ArrayList<>();
+        pendingList = new ArrayList<>();
+        orderList = new ArrayList<>();
+//        if (myTaskAdapter == null)
+        myTaskAdapter = new MyCustomAdapter(getActivity().getApplicationContext());
+//        if (myPendingAdapter == null)
+        myPendingAdapter = new MyCustomAdapter(getActivity().getApplicationContext());
+//        if (myOrderAdapter == null)
+        myOrderAdapter = new MyCustomAdapter(getActivity().getApplicationContext());
+    }
+
     private ViewPager mViewPager;
 
     /**
@@ -154,61 +193,60 @@ public class SlidingTabsBasicFragment extends Fragment {
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
             // Inflate a new layout from our resources
-            final View view;
+
+            final View viewProfile;
+            final View viewTask;
+            final View viewOrder;
             if (position == 0) {//current page is tasks
-                view = getActivity().getLayoutInflater().inflate(R.layout.pager_item_orders,
+                viewTask = getActivity().getLayoutInflater().inflate(R.layout.pager_item_orders,
                         container, false);
-
+                container.addView(viewTask);
+                taskLW = (ListView) viewTask.findViewById(R.id.lw_orders);
+                taskLW.setAdapter(myTaskAdapter);
+                return viewTask;
             } else if (position == 1) {//current page is profile
-                view = getActivity().getLayoutInflater().inflate(R.layout.pager_item_profile,
+                viewProfile = getActivity().getLayoutInflater().inflate(R.layout.pager_item_profile,
                         container, false);
-                //TODO get orders from server
-                Button b = (Button) view.findViewById(R.id.btn_add_next_city);
-                b.setOnClickListener(new View.OnClickListener() {
+                Button btnAddNextCity = (Button) viewProfile.findViewById(R.id.btn_add_next_city);
+                btnAddNextCity.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        new GetUserInfoTask("freemahn").execute();
+                        new GetUserInfoTask(loginUser).execute();
                     }
                 });
-
-
-            } else {//current page is goods
-                view = getActivity().getLayoutInflater().inflate(R.layout.pager_item_goods,
-                        container, false);
-                view.findViewById(R.id.btn_new_order).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent intent = new Intent(view.getContext(), MakeNewOrderActivity.class);
-                        startActivityForResult(intent, 0);
-                    }
-                });
-            }
-            // Add the newly created View to the ViewPager
-            container.addView(view);
-
-            ListView ordersLW = (ListView) view.findViewById(R.id.lw_orders);
-            List<Order> ordersList = new ArrayList<>();
-           // ordersList.add(new Order("vine", "Moscow"));
-           // ordersList.add(new Order("cheese", "Penza"));
-            if (position == 0)
-                ordersList.add(new Order("ZERO", "Penza"));
-            if (position == 1) {
-                ordersLW.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                pendingLW = (ListView) viewProfile.findViewById(R.id.lw_orders);
+                pendingLW.setAdapter(myPendingAdapter);
+                pendingLW.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        DialogFragment dlgAccept = new DialogAcceptOrder();
+                        DialogAcceptOrder dlgAccept = new DialogAcceptOrder();
+                        Bundle bundle = new Bundle();
+                        bundle.putCharSequence("order", new Gson().toJson(parent.getItemAtPosition(position)));
+                        bundle.putInt("position", position);
+                        dlgAccept.setArguments(bundle);
+                        dlgAccept.setTargetFragment(t, REQUEST_CODE_ACCEPT_DIALOG);
                         dlgAccept.show(getFragmentManager(), "dlg_tag");
                     }
                 });
-            }
-            if (position == 2)
-               // ordersList.add(new Order("TWO", "Penza"));
-            ordersLW.setAdapter(new EasyAdapter<Order>(view.getContext(),
-                    OrdersViewHolder.class, ordersList
-            ));
+                container.addView(viewProfile);
+                return viewProfile;
 
-            Log.i(LOG_TAG, "instantiateItem() [position: " + position + "]");
-            return view;
+            } else {//current page is goods
+                viewOrder = getActivity().getLayoutInflater().inflate(R.layout.pager_item_goods,
+                        container, false);
+                orderLW = (ListView) viewOrder.findViewById(R.id.lw_orders);
+                orderLW.setAdapter(myOrderAdapter);
+                viewOrder.findViewById(R.id.btn_new_order).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(viewOrder.getContext(), MakeNewOrderActivity.class);
+                        intent.putExtra("loginUser", loginUser);
+                        startActivityForResult(intent, REQUEST_CODE_MAKE_ORDER);
+                    }
+                });
+                container.addView(viewOrder);
+                return viewOrder;
+            }
         }
 
         @Override
@@ -218,6 +256,22 @@ public class SlidingTabsBasicFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_ACCEPT_DIALOG) {
+            int position = data.getIntExtra("position", 0);
+            if (resultCode == 1) {//ok
+                new MakeAcceptTask(loginUser, myPendingAdapter.getItem(position).title).execute();
+
+            } else {//dismiss
+                myPendingAdapter.removeItem(position);
+            }
+        }
+        if (requestCode == REQUEST_CODE_MAKE_ORDER) {
+
+        }
+    }
 
     public class GetUserInfoTask extends AsyncTask<Void, Void, Void> {
 
@@ -229,24 +283,159 @@ public class SlidingTabsBasicFragment extends Fragment {
         }
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
         protected Void doInBackground(Void... strings) {
             String json = null;
             try {
-                json = Jsoup.connect(url + "getUserInfo?login=" + mLogin).ignoreContentType(true).execute().body();
+                json = Jsoup.connect(url + "getUserInfo?login=" + mLogin).timeout(3000).ignoreContentType(true).execute().body();
             } catch (IOException e) {
                 e.printStackTrace();
             }
             Gson gson = new Gson();
             Log.d("USER", json + "");
-            ServerAnswer user = gson.fromJson(json, ServerAnswer.class);
-            android.util.Log.d("GETUSER", user.taskList + "");
+            user = gson.fromJson(json, ServerAnswer.class);
             return null;
         }
 
         @Override
         protected void onPostExecute(final Void success) {
-            // nameFirst.setText(user.name);
-            //nameLast.setText(user.name.split(" ")[1]);
+            //Log.e("before", pendingLW.getAdapter().getCount() + "");
+            myPendingAdapter.clear();
+            myOrderAdapter.clear();
+            myTaskAdapter.clear();
+
+            for (Order o : user.pendingList)
+                myPendingAdapter.addItem(o);
+            pendingLW.setAdapter(myPendingAdapter);
+            for (Order o : user.taskList)
+                myTaskAdapter.addItem(o);
+            taskLW.setAdapter(myTaskAdapter);
+            for (Order o : user.orderList)
+                myOrderAdapter.addItem(o);
+            orderLW.setAdapter(myOrderAdapter);
+            Log.e("after", orderLW.getAdapter().getCount() + "");
+
+        }
+    }
+
+
+    private class MyCustomAdapter extends BaseAdapter {
+        private Context mContext;
+        private ArrayList<Order> mData = new ArrayList();
+        private LayoutInflater mInflater;
+
+        public MyCustomAdapter(Context context) {
+            mContext = context;
+            mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        }
+
+        public void addItem(final Order item) {
+            mData.add(item);
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public int getCount() {
+            return mData.size();
+        }
+
+
+        public void clear() {
+            mData = new ArrayList<>();
+        }
+
+        public void removeItem(int position) {
+            mData.remove(position);
+        }
+
+        @Override
+        public Order getItem(int position) {
+            return mData.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            System.out.println("getView " + position + " " + convertView);
+            ViewHolder holder = null;
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.orders_list_item, null);
+                holder = new ViewHolder();
+                holder.twName = (TextView) convertView.findViewById(R.id.order_name);
+                //      holder.twCity = (TextView) convertView.findViewById(R.id.order_city);
+
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+            holder.twName.setText(mData.get(position).title);
+            //     holder.twCity.setText(mData.get(position).city);
+            return convertView;
+        }
+
+    }
+
+    public static class ViewHolder {
+        public TextView twName;
+        //  public TextView twCity;
+    }
+
+
+    /**
+     * Created by Freemahn on 21.03.2015.
+     */
+    public class MakeAcceptTask extends AsyncTask<String, Void, Void> {
+        String url = "http://95.85.46.247:8080/shipntrip/";
+        String mLogin;
+        String mTitle;
+
+        public MakeAcceptTask(String mLogin, String mTitle) {
+            this.mLogin = mLogin;
+            this.mTitle = mTitle;
+        }
+
+        @Override
+        protected Void doInBackground(String... strings) {
+            HttpParams params = new BasicHttpParams();
+            HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+            HttpProtocolParams.setContentCharset(params, "utf-8");
+
+            HttpClient httpclient = new DefaultHttpClient(params);
+            httpclient.getParams().setParameter("http.protocol.content-charset", "UTF-8");
+            HttpPost http = new HttpPost(url + "beginWork");
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+            nameValuePairs.add(new BasicNameValuePair("login", mLogin));
+            nameValuePairs.add(new BasicNameValuePair("title", mTitle));
+            try {
+                http.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
+                HttpResponse response = httpclient.execute(http);
+                String line = "";
+                StringBuilder total = new StringBuilder();
+                BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+                while ((line = rd.readLine()) != null) {
+                    total.append(line);
+                }
+                android.util.Log.e("Response", total.toString());
+                if (total.toString().equals("{}"))
+                    android.util.Log.e("ERROR", "in MakeAcceptTask - Empty server answer");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            android.util.Log.d("UPLOADING", "Success");
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            new GetUserInfoTask(loginUser);
         }
     }
 

@@ -11,7 +11,7 @@
         android:orientation="horizontal">
 
         <ImageView
-            android:src="@drawable/ic_launcher"
+            android:src="@drawable/ava1"
             android:layout_width="100dp"
             android:layout_height="100dp" />
 
