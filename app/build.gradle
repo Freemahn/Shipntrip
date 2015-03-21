@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.shipntrip.shipntrip"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 21
         versionCode 1
         versionName "1.0"
@@ -17,6 +17,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
 }
 
 
@@ -25,5 +26,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.nispok:slidingtabs:1.0.0'
     compile 'uk.co.ribot:easyadapter:1.4.0@aar'
+
     
 }
+

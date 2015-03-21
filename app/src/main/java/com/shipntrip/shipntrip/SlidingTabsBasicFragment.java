@@ -19,6 +19,7 @@ package com.shipntrip.shipntrip;
 import com.example.android.common.logger.Log;
 import com.example.android.common.view.SlidingTabLayout;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerAdapter;
@@ -26,7 +27,6 @@ import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import java.util.ArrayList;
@@ -146,18 +146,25 @@ public class SlidingTabsBasicFragment extends Fragment {
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
             // Inflate a new layout from our resources
-            View view;
+            final View view;
             if (position == 0) {//current page is tasks
-                view = getActivity().getLayoutInflater().inflate(R.layout.orders_pager_item,
+                view = getActivity().getLayoutInflater().inflate(R.layout.pager_item_orders,
                         container, false);
 
             } else if (position == 1) {//current page is profile
-                view = getActivity().getLayoutInflater().inflate(R.layout.profile_pager_item,
+                view = getActivity().getLayoutInflater().inflate(R.layout.pager_item_profile,
                         container, false);
 
             } else {//current page is goods
-                view = getActivity().getLayoutInflater().inflate(R.layout.goods_pager_item,
+                view = getActivity().getLayoutInflater().inflate(R.layout.pager_item_goods,
                         container, false);
+                view.findViewById(R.id.btn_new_order).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(view.getContext(), MakeNewOrderActivity.class);
+                        startActivityForResult(intent, 0);
+                    }
+                });
             }
             // Add the newly created View to the ViewPager
             container.addView(view);
@@ -186,8 +193,6 @@ public class SlidingTabsBasicFragment extends Fragment {
             Log.i(LOG_TAG, "destrItem() [position: " + position + "]");
 
         }
-
-
     }
 
 
