@@ -20,10 +20,17 @@ import com.example.android.common.logger.Log;
 import com.example.android.common.view.SlidingTabLayout;
 import com.google.gson.Gson;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -35,6 +42,7 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
@@ -54,6 +62,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * A basic sample which shows how to use {@link com.example.android.common.view.SlidingTabLayout}
@@ -65,6 +74,7 @@ public class SlidingTabsBasicFragment extends Fragment {
     static final String LOG_TAG = "SlidingTabsBasicFragment";
     public static final int REQUEST_CODE_MAKE_ORDER = 0;
     public static final int REQUEST_CODE_ACCEPT_DIALOG = 1;
+    public static final int REQUEST_CODE_ADD_DIALOG = 10;
     List<Order> pendingList;
     List<Order> taskList;
     List<Order> orderList;
@@ -75,8 +85,12 @@ public class SlidingTabsBasicFragment extends Fragment {
     MyCustomAdapter myPendingAdapter;
     MyCustomAdapter myOrderAdapter;
     MyCustomAdapter myTaskAdapter;
-    String loginUser = "xaker";
+    String loginUser = "xaker4544";
     Fragment t;
+    AppLocationService appLocationService;
+    TextView twCurrentCity;
+    TextView twNextCity;
+    Button btnAddNextCity;
 
     /**
      * A custom {@link ViewPager} title strip which looks much like Tabs present in Android v4.0 and
@@ -97,6 +111,8 @@ public class SlidingTabsBasicFragment extends Fragment {
         myPendingAdapter = new MyCustomAdapter(getActivity().getApplicationContext());
 //        if (myOrderAdapter == null)
         myOrderAdapter = new MyCustomAdapter(getActivity().getApplicationContext());
+
+        appLocationService = new AppLocationService(this.getActivity().getApplicationContext());
     }
 
     private ViewPager mViewPager;
@@ -207,11 +223,17 @@ public class SlidingTabsBasicFragment extends Fragment {
             } else if (position == 1) {//current page is profile
                 viewProfile = getActivity().getLayoutInflater().inflate(R.layout.pager_item_profile,
                         container, false);
-                Button btnAddNextCity = (Button) viewProfile.findViewById(R.id.btn_add_next_city);
+                twCurrentCity = (TextView) viewProfile.findViewById(R.id.tw_current_city);
+                twCurrentCity.setText(showNWLocation());
+                twNextCity = (TextView) viewProfile.findViewById(R.id.tw_next_city);
+                btnAddNextCity = (Button) viewProfile.findViewById(R.id.btn_add_next_city);
                 btnAddNextCity.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        new GetUserInfoTask(loginUser).execute();
+                        DialogAddCity dlgAdd = new DialogAddCity();
+                        dlgAdd.setTargetFragment(t, REQUEST_CODE_ADD_DIALOG);
+                        dlgAdd.show(getFragmentManager(), "dlg_tag");
+                        //refresh
                     }
                 });
                 pendingLW = (ListView) viewProfile.findViewById(R.id.lw_orders);
@@ -245,7 +267,10 @@ public class SlidingTabsBasicFragment extends Fragment {
                     }
                 });
                 container.addView(viewOrder);
+                if (position == 2)
+                    new GetUserInfoTask(loginUser).execute();
                 return viewOrder;
+
             }
         }
 
@@ -267,6 +292,12 @@ public class SlidingTabsBasicFragment extends Fragment {
             } else {//dismiss
                 myPendingAdapter.removeItem(position);
             }
+        }
+        if (requestCode == REQUEST_CODE_ADD_DIALOG) {
+            String cityName = data.getStringExtra("city");
+            twNextCity.setText(cityName);
+            btnAddNextCity.setVisibility(View.GONE);
+
         }
         if (requestCode == REQUEST_CODE_MAKE_ORDER) {
 
@@ -298,6 +329,7 @@ public class SlidingTabsBasicFragment extends Fragment {
             Gson gson = new Gson();
             Log.d("USER", json + "");
             user = gson.fromJson(json, ServerAnswer.class);
+
             return null;
         }
 
@@ -318,6 +350,8 @@ public class SlidingTabsBasicFragment extends Fragment {
                 myOrderAdapter.addItem(o);
             orderLW.setAdapter(myOrderAdapter);
             Log.e("after", orderLW.getAdapter().getCount() + "");
+            twCurrentCity.setText(showNWLocation());
+
 
         }
     }
@@ -439,5 +473,46 @@ public class SlidingTabsBasicFragment extends Fragment {
         }
     }
 
+    String showNWLocation() {
+        Location nwLocation = appLocationService
+                .getLocation(LocationManager.NETWORK_PROVIDER);
 
+        if (nwLocation != null) {
+            double latitude = nwLocation.getLatitude();
+            double longitude = nwLocation.getLongitude();
+            Toast.makeText(
+                    t.getActivity().getApplicationContext(),
+                    "Mobile Location (NW): \nLatitude: " + latitude
+                            + "\nLongitude: " + longitude,
+                    Toast.LENGTH_LONG).show();
+            return getCity(latitude, longitude);
+        } else {
+            //showSettingsAlert("NETWORK");
+            Toast.makeText(t.getActivity().getApplicationContext(), "NETWORK", Toast.LENGTH_LONG).show();
+            return "NULL";
+        }
+
+
+    }
+
+    String getCity(double latitude, double longitude) {
+        Geocoder geoCoder = new Geocoder(t.getActivity().getApplicationContext(), Locale.getDefault());
+        StringBuilder builder = new StringBuilder();
+        try {
+            List<Address> address = geoCoder.getFromLocation(latitude, longitude, 1);
+
+            int maxLines = address.get(0).getMaxAddressLineIndex();
+            for (int i = 0; i < maxLines; i++) {
+                String addressStr = address.get(0).getAddressLine(i);
+                builder.append(addressStr);
+                builder.append(" ");
+            }
+            Log.e("getCity", address.get(0).getAdminArea().split(" ")[1]);
+
+            return address.get(0).getAdminArea().split(" ")[1]; //This is the complete address.
+        } catch (IOException e) {
+        }
+
+        return null;
+    }
 }

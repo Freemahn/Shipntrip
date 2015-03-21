@@ -47,6 +47,7 @@ public class DialogAcceptOrder extends DialogFragment {
                 Intent intent = new Intent();
                 intent.putExtra("position", position);
                 getTargetFragment().onActivityResult(1, 1, intent);
+                dismiss();
             }
         });
         v.findViewById(R.id.btnNo).setOnClickListener(new OnClickListener() {
@@ -55,6 +56,7 @@ public class DialogAcceptOrder extends DialogFragment {
                 Intent intent = new Intent();
                 intent.putExtra("position", position);
                 getTargetFragment().onActivityResult(1, -1, intent);
+                dismiss();
             }
         });
         return v;
